@@ -13,6 +13,11 @@ no backend — everything lives in your browser.
 6. Best of five, first to **3** wins — **the losing team picks the next game**
 7. Each drafted game is played at most once
 
+Every screen has a back control, and it knows what it means in context:
+"Undo last match" (including from the champion screen, when someone taps
+the wrong winner), "Change game", "Undo <game>" during the draft, or
+"Edit players". Nothing in a series is unrecoverable except Start Over.
+
 ## Run it
 
 ```bash
@@ -34,7 +39,8 @@ src/
   types.ts          domain vocabulary: Phase, GameState, Action
   lib/
     machine.ts      THE RULES. A pure reducer — every rule above lives here
-    selectors.ts    derived state (unplayed games, champion, score)
+    selectors.ts    derived state (unplayed games, champion, score) and
+                    backIntent — what "back" means in the current phase
     storage.ts      localStorage: the game pool and the resumable session
     defaults.ts     seed games, WINS_NEEDED, LINEUP_SIZE
     team.ts         the team colour system (A = blue, B = amber)

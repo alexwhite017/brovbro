@@ -7,8 +7,16 @@ import type { ScreenProps } from './screenProps'
 
 export function SetupScreen({ state, dispatch }: ScreenProps) {
   /* Local state, not reducer state: half-typed names are UI scratch work.
-     Only the submitted result is worth dispatching. */
-  const [names, setNames] = useState<string[]>([])
+     Only the submitted result is worth dispatching.
+
+     The argument is a FUNCTION, not a value — useState's lazy initialiser.
+     It runs once, on first mount, which is what seeds the fields when
+     someone comes back here to fix a typo. Passing
+     `useState(state.players.map(...))` instead would rebuild that array on
+     every single keystroke and throw it away. */
+  const [names, setNames] = useState<string[]>(() =>
+    state.players.map((p) => p.name),
+  )
 
   /* How many inputs to show is derived from the chosen mode rather than
      stored, so the two can never disagree. `names` may be shorter, so every

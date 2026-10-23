@@ -9,7 +9,11 @@
 import type { Game, GameState } from '../types'
 
 const POOL_KEY = 'bvb:pool:v1'
-const SESSION_KEY = 'bvb:session:v1'
+/* Bumped to v2 when tossWinner was added to GameState. A v1 session has no
+   tossWinner, so undoing back to match one would have found `undefined`
+   where a TeamId belongs. Bumping the key makes stale saves simply not
+   load, which is the entire reason the version is in the key. */
+const SESSION_KEY = 'bvb:session:v2'
 
 /* WORKED EXAMPLE — note the try/catch. localStorage throws in private
    browsing modes and JSON.parse throws on corrupted data; a storage bug

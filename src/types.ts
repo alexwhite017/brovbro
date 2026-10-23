@@ -71,6 +71,11 @@ export type GameState = {
 
   /** Team currently choosing which game to play next. */
   chooser: TeamId | null
+  /** Who won the pre-series coin toss, kept for the life of the series.
+   *  `chooser` gets overwritten after every match, so undoing back to match
+   *  one would otherwise have no way to know who chose it. State you only
+   *  need in order to go backwards is still state. */
+  tossWinner: TeamId | null
   /** The game on the table right now. */
   currentGameId: string | null
 
@@ -101,6 +106,9 @@ export type Action =
   | { type: 'ADD_POOL_GAME'; game: Game }
   | { type: 'RENAME_POOL_GAME'; gameId: string; name: string }
   | { type: 'REMOVE_POOL_GAME'; gameId: string }
+  /* going backwards — one action, because what "back" means is a property
+     of the current phase, not of the button that was pressed */
+  | { type: 'GO_BACK' }
   /* session control */
   | { type: 'REMATCH' } /* same players & teams, fresh draft */
   | { type: 'RESET' } /* back to an empty setup screen */

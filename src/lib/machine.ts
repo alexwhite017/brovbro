@@ -14,6 +14,7 @@
 
 import type { Action, GameState, Player, Team, TeamId } from '../types'
 import { DEFAULT_GAMES, LINEUP_SIZE, WINS_NEEDED } from './defaults'
+import { backIntent } from './selectors'
 
 /* ---- Small pure helpers ------------------------------------------------- */
 
@@ -53,6 +54,7 @@ export const initialState: GameState = {
   draftIndex: 0,
   lineup: [],
   chooser: null,
+  tossWinner: null,
   currentGameId: null,
   results: [],
   score: { A: 0, B: 0 },
@@ -159,6 +161,9 @@ export function reducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         chooser: action.result,
+        /* Remembered separately: `chooser` changes after every match, but
+           undoing back to match one needs to know who opened the series. */
+        tossWinner: action.result,
         currentGameId: null,
         phase: 'match',
       }
@@ -243,10 +248,89 @@ export function reducer(state: GameState, action: Action): GameState {
         draftIndex: 0,
         lineup: [],
         chooser: null,
+        tossWinner: null,
         currentGameId: null,
         results: [],
         score: { A: 0, B: 0 },
       }
+
+    /* Going backwards. The reducer does not decide WHAT back means — the
+       backIntent selector does, and the UI reads the same function for its
+       label. One definition, two consumers, no chance of the button
+       promising something the reducer doesn't do. */
+    case 'GO_BACK': {
+      const intent = backIntent(state)
+
+      switch (intent.kind) {
+        case 'none':
+          return state
+
+        case 'toSetup':
+          return { ...state, phase: 'setup' }
+
+        case 'toTeams':
+          return { ...state, phase: 'teams' }
+
+        case 'reflipDraft':
+          return { ...state, phase: 'draftFlip', draftOrder: [], draftIndex: 0 }
+
+        /* Hand the last drafted game back to the pool. Note phase is forced
+           to 'draft': this is also how you escape the firstPickFlip screen,
+           which is only reachable with a full lineup. */
+        case 'undoPick':
+          return {
+            ...state,
+            phase: 'draft',
+            lineup: state.lineup.slice(0, -1),
+            draftIndex: Math.max(0, state.draftIndex - 1),
+          }
+
+        /* Put the game back in the picker without touching the score. */
+        case 'unchooseGame':
+          return { ...state, currentGameId: null }
+
+        case 'reflipFirstPick':
+          return {
+            ...state,
+            phase: 'firstPickFlip',
+            chooser: null,
+            tossWinner: null,
+            currentGameId: null,
+          }
+
+        /* The important one: take back the last reported result.
+
+           Score is RECOMPUTED from the remaining results rather than
+           decremented. Decrementing trusts that the stored score and the
+           stored history agree; recomputing makes that impossible to get
+           wrong, and `results` is the real record either way. */
+        case 'undoMatch': {
+          const undone = state.results[state.results.length - 1]
+          if (!undone) return state
+
+          const results = state.results.slice(0, -1)
+
+          const score: Record<TeamId, number> = { A: 0, B: 0 }
+          for (const result of results) score[result.winner] += 1
+
+          const previous = results[results.length - 1]
+
+          return {
+            ...state,
+            /* Also the route back off the champion screen. */
+            phase: 'match',
+            results,
+            score,
+            /* Whoever lost the match before this one picks — or, if we have
+               undone all the way to the start, the coin toss winner. */
+            chooser: previous ? otherTeam(previous.winner) : state.tossWinner,
+            /* Put the undone game straight back on the table: "we tapped
+               the wrong winner" is the case this exists for. */
+            currentGameId: undone.gameId,
+          }
+        }
+      }
+    }
 
     /* ---------- Provided ---------- */
     case 'RESET':

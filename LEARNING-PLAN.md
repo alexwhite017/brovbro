@@ -35,6 +35,7 @@ To practise, pick a row, delete the implementation, and rebuild it.
 | 15 | `src/lib/machine.ts` | `REMATCH`, pool actions | resetting part of a state tree |
 | 16 | `src/components/GamePoolEditor.tsx` | pool editing | `<dialog>`, edit-in-place |
 | 17 | `src/lib/storage.ts` + `src/App.tsx` | `loadSession` / `saveSession` | effects, serialization, versioned keys |
+| 18 | `src/lib/selectors.ts` + `machine.ts` | `backIntent` / `GO_BACK` | one decision, two consumers; recompute vs decrement |
 
 ## Checks to run
 ```bash
@@ -52,9 +53,10 @@ npm run build        # the real thing
 
 ## Exercises, if you want them
 
-- **Undo the last match.** Add `UNDO_LAST` to the `Action` union and handle it
-  in the reducer: pop the last result, recompute `score` from `results`, and
-  work out who chooses now. Good practice at deriving rather than storing.
+- **Undo** is now built — read `backIntent` in `selectors.ts` alongside the
+  `GO_BACK` case in `machine.ts` to see one definition feeding two consumers.
+  To practise: make the draft's undo able to step back past pick one into
+  the coin toss, deciding what should happen to the draft order.
 - **Match history across nights.** A third localStorage key, written on
   `champion`, plus a win-loss table on the setup screen.
 - **Best of 7.** Change two constants and watch the draft, the pick tracker

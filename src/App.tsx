@@ -16,7 +16,7 @@ import { SetupScreen } from './components/SetupScreen'
 import { Shell } from './components/Shell'
 import { TeamsScreen } from './components/TeamsScreen'
 import { LINEUP_SIZE, initialState, reducer } from './lib/machine'
-import { matchNumber } from './lib/selectors'
+import { backIntent, matchNumber } from './lib/selectors'
 import { loadPool, loadSession, savePool, saveSession } from './lib/storage'
 import type { GameState } from './types'
 
@@ -53,6 +53,10 @@ export default function App() {
   useEffect(() => saveSession(state), [state])
 
   const props = { state, dispatch }
+
+  /* The same selector the reducer uses, so the label can never describe
+     something different from what GO_BACK actually does. */
+  const back = backIntent(state)
 
   /* An exhaustive switch over Phase. Add a phase to the union in types.ts
      and TypeScript flags this function for not returning on every path —
@@ -109,6 +113,12 @@ export default function App() {
     <Shell
       eyebrow={route.eyebrow}
       title={route.title}
+      backLabel={back.label}
+      onBack={
+        back.kind === 'none'
+          ? undefined
+          : () => dispatch({ type: 'GO_BACK' })
+      }
       footer={
         <>
           {state.phase === 'setup' ? (
