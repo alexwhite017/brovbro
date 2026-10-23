@@ -1,11 +1,11 @@
 # Bro Vs Bro
 
-A pass-and-play tournament app for couch gaming nights. One device, no
-accounts, no backend — everything lives in your browser.
+A pass-and-play tournament app for game nights. One device, no accounts,
+no backend — everything lives in your browser.
 
 ## House rules
 
-1. Enter 2 bros (1v1) or 4 bros (2v2)
+1. Enter 2 players (1v1) or 4 players (2v2)
 2. For 2v2, pick one of the three possible matchups — or let the app roll it
 3. Coin flip decides who drafts first
 4. Teams alternate picks (**A B A B A**) until five games are on the card
@@ -37,7 +37,7 @@ src/
     selectors.ts    derived state (unplayed games, champion, score)
     storage.ts      localStorage: the game pool and the resumable session
     defaults.ts     seed games, WINS_NEEDED, LINEUP_SIZE
-    team.ts         the team colour system (A = red, B = yellow)
+    team.ts         the team colour system (A = blue, B = amber)
   components/       one file per screen, all dumb: render state, dispatch actions
   index.css         design tokens, shared classes, keyframes
 ```

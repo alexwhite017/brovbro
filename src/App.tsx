@@ -61,43 +61,44 @@ export default function App() {
     switch (state.phase) {
       case 'setup':
         return {
-          eyebrow: 'Step one',
-          title: 'Enter the bros',
+          eyebrow: 'Setup',
+          title: "Who's playing?",
           node: <SetupScreen {...props} />,
         }
       case 'teams':
         return {
-          eyebrow: 'Step two',
-          title: 'Draw the lines',
+          eyebrow: 'Setup',
+          title: 'Pick the teams',
           node: <TeamsScreen {...props} />,
         }
       case 'draftFlip':
         return {
-          eyebrow: 'Toss up',
-          title: 'Who drafts first',
+          eyebrow: 'Coin toss',
+          title: 'Who drafts first?',
           node: <CoinFlipScreen {...props} purpose="draft" />,
         }
       case 'draft':
         return {
           eyebrow: `Draft · pick ${state.draftIndex + 1} of ${LINEUP_SIZE}`,
-          title: 'Build the card',
+          title: 'Draft the games',
           node: <DraftScreen {...props} />,
         }
       case 'firstPickFlip':
         return {
-          eyebrow: 'Toss up',
-          title: 'Who picks game one',
+          eyebrow: 'Coin toss',
+          title: 'Who picks game one?',
           node: <CoinFlipScreen {...props} purpose="firstPick" />,
         }
       case 'match':
         return {
           eyebrow: `Match ${matchNumber(state)} · best of ${LINEUP_SIZE}`,
-          title: 'On the table',
+          /* The title answers "what do I do now?", which differs by mode. */
+          title: state.currentGameId ? 'Match in progress' : 'Choose the next game',
           node: <MatchScreen {...props} />,
         }
       case 'champion':
         return {
-          eyebrow: 'Final bell',
+          eyebrow: 'Series complete',
           title: 'Champion',
           node: <ChampionScreen {...props} />,
         }
@@ -112,16 +113,16 @@ export default function App() {
         <>
           {state.phase === 'setup' ? (
             <button
-              className="btn btn-ghost !px-3 !py-1.5 !text-sm"
+              className="btn btn-ghost !px-3 !py-1.5 text-xs"
               onClick={() => setEditingPool(true)}
             >
               Edit games
             </button>
           ) : (
             <button
-              className="btn btn-ghost !px-3 !py-1.5 !text-sm"
+              className="btn btn-ghost !px-3 !py-1.5 text-xs"
               onClick={() => {
-                if (confirm('Scrap this series and start over?')) {
+                if (confirm('Start over? The current series will be lost.')) {
                   dispatch({ type: 'RESET' })
                 }
               }}

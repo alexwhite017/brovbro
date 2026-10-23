@@ -1,14 +1,14 @@
 import { WINS_NEEDED } from '../lib/defaults'
 import { currentGame, matchNumber, unplayedGames } from '../lib/selectors'
 import { skinFor } from '../lib/team'
+import type { GameState, TeamId } from '../types'
 import { ResultsList } from './ResultsList'
-import type { TeamId } from '../types'
 import type { ScreenProps } from './screenProps'
 
 /* =========================================================================
    MATCH — the live series. Two modes, decided by ONE field:
-     currentGameId === null  ->  the chooser picks from the unplayed games
-     currentGameId !== null  ->  "who won?"
+     currentGameId === null  ->  the chooser picks the next game
+     currentGameId !== null  ->  report who won
    No extra boolean, so the two modes can never both be active.
    ========================================================================= */
 
@@ -17,24 +17,28 @@ export function MatchScreen({ state, dispatch }: ScreenProps) {
   const remaining = unplayedGames(state)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <Scoreboard state={state} />
 
       {game ? (
-        /* ---- A game is on the table: report the winner ---- */
-        <div className="space-y-6 text-center">
-          <div>
-            <p className="label mb-2">Now playing</p>
-            <h3 className="animate-rise text-4xl sm:text-5xl">{game.name}</h3>
+        <div className="space-y-5">
+          <div className="panel-raised px-5 py-6 text-center">
+            <p className="label mb-2 flex items-center justify-center gap-2">
+              {/* A live indicator earns its pulse: it marks the one thing
+                  currently happening. Nothing else on screen animates. */}
+              <span className="bg-danger animate-pulse-dot size-1.5 rounded-full" />
+              Now playing
+            </p>
+            <h3 className="animate-pop text-3xl sm:text-4xl">{game.name}</h3>
           </div>
 
-          <p className="label">Who took it?</p>
+          <p className="label text-center">Who won?</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {(['A', 'B'] as const).map((team) => (
               <button
                 key={team}
                 onClick={() => dispatch({ type: 'REPORT_WINNER', winner: team })}
-                className={`font-display border-[3px] border-ink px-4 py-6 text-2xl uppercase transition-transform hover:-translate-y-0.5 ${skinFor(team).chip}`}
+                className={`tile border-transparent text-center text-lg ${skinFor(team).chip} hover:opacity-90`}
               >
                 {state.teams[team].name}
               </button>
@@ -42,30 +46,36 @@ export function MatchScreen({ state, dispatch }: ScreenProps) {
           </div>
         </div>
       ) : (
-        /* ---- Nobody has chosen yet: the chooser picks ---- */
-        <div className="space-y-5">
+        <div className="space-y-4">
           {state.chooser && (
             <div
-              className={`border-[3px] border-ink px-4 py-3 ${skinFor(state.chooser).chip}`}
+              className={`panel-raised flex items-center gap-3 px-4 py-3 ${skinFor(state.chooser).wash}`}
             >
-              <p className="label !text-current opacity-75">
-                {state.results.length === 0 ? 'Won the toss' : 'Lost the last one, picks next'}
-              </p>
-              <p className="font-display text-2xl uppercase">
-                {state.teams[state.chooser].name}
-              </p>
+              <span
+                className={`h-9 w-1.5 shrink-0 rounded-full ${skinFor(state.chooser).chip}`}
+              />
+              <div>
+                <p className="label">
+                  {state.results.length === 0
+                    ? 'Won the toss · picks first'
+                    : 'Lost the last match · picks next'}
+                </p>
+                <p className="text-xl font-semibold">
+                  {state.teams[state.chooser].name}
+                </p>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {remaining.map((option, i) => (
               <button
                 key={option.id}
                 onClick={() =>
                   dispatch({ type: 'CHOOSE_GAME', gameId: option.id })
                 }
-                className="btn btn-ghost animate-rise min-h-16 text-lg leading-tight"
-                style={{ animationDelay: `${i * 45}ms` }}
+                className="tile animate-rise min-h-14"
+                style={{ animationDelay: `${i * 40}ms` }}
               >
                 {option.name}
               </button>
@@ -76,8 +86,8 @@ export function MatchScreen({ state, dispatch }: ScreenProps) {
 
       {state.results.length > 0 && (
         <div>
-          <hr className="rule mb-4" />
-          <p className="label mb-3">Tale of the tape</p>
+          <hr className="rule mb-3" />
+          <p className="label mb-1">Results</p>
           <ResultsList state={state} />
         </div>
       )}
@@ -85,16 +95,15 @@ export function MatchScreen({ state, dispatch }: ScreenProps) {
   )
 }
 
-/* The scoreboard is its own component because it renders above both modes
-   and would otherwise be duplicated. Three explicit children beat a clever
-   .map().flatMap() that injects a divider — write the shape you mean. */
-function Scoreboard({ state }: Pick<ScreenProps, 'state'>) {
+/* Its own component because it renders above both modes. Three explicit
+   children, written in the order they appear. */
+function Scoreboard({ state }: { state: GameState }) {
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-[3px] border-ink bg-paper-dim/50 px-4 py-4">
+    <div className="panel-raised grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-5">
       <TeamScore team="A" state={state} align="left" />
       <div className="text-center">
         <p className="label !text-[10px]">Match {matchNumber(state)}</p>
-        <p className="font-display text-sm">First to {WINS_NEEDED}</p>
+        <p className="text-muted mt-0.5 text-xs">First to {WINS_NEEDED}</p>
       </div>
       <TeamScore team="B" state={state} align="right" />
     </div>
@@ -107,23 +116,33 @@ function TeamScore({
   align,
 }: {
   team: TeamId
-  state: ScreenProps['state']
+  state: GameState
   align: 'left' | 'right'
 }) {
   const score = state.score[team]
-  const leading = score > state.score[team === 'A' ? 'B' : 'A']
+  const skin = skinFor(team)
+  const right = align === 'right'
+
   return (
-    <div className={align === 'left' ? 'text-left' : 'text-right'}>
-      <p className={`label !text-[10px] ${skinFor(team).text}`}>
+    <div className={right ? 'text-right' : 'text-left'}>
+      <p className={`truncate text-sm font-semibold ${skin.text}`}>
         {state.teams[team].name}
       </p>
-      {/* The leader's number is physically bigger — a scoreboard should be
-          readable from the other side of the room. */}
-      <p
-        className={`font-display leading-none transition-all ${leading ? 'text-5xl' : 'text-4xl opacity-70'}`}
+      <p className="stat mt-0.5 text-4xl font-extrabold">{score}</p>
+
+      {/* Pips: three slots, filled as wins land. A number tells you the
+          score; the pips tell you how close the series is without reading. */}
+      <div
+        className={`mt-2 flex gap-1 ${right ? 'justify-end' : 'justify-start'}`}
+        aria-hidden
       >
-        {score}
-      </p>
+        {Array.from({ length: WINS_NEEDED }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-5 rounded-full ${i < score ? skin.chip : 'bg-line'}`}
+          />
+        ))}
+      </div>
     </div>
   )
 }

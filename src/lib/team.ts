@@ -3,39 +3,40 @@ import type { TeamId } from '../types'
 /* =========================================================================
    Team colour language, defined once.
 
-   Team A is blood red, team B is electric yellow — everywhere, on every
-   screen, so colour alone identifies a side without reading the name.
+   Team A is blue, team B is amber — everywhere, on every screen, so colour
+   alone identifies a side. Blue/amber rather than the obvious red/green:
+   roughly 1 in 12 men has some form of red-green colour blindness, and
+   blue vs amber stays distinguishable under all of them.
 
-   One contrast note that drove these choices: yellow text on cream paper is
-   unreadable (roughly 1.6:1, where 4.5:1 is the accessible minimum). So
-   team B is identified by a yellow FILL behind ink text, never by yellow
-   text. Red survives as text; yellow does not. Colour pairs are a system,
-   not a free choice per component.
+   Both clear 7:1 contrast on the dark surfaces, so either works as text.
 
-   These must stay as complete literal class strings. Tailwind scans source
-   files for class names at build time — it cannot see `bg-${color}`, and
-   that class simply won't exist in the stylesheet.
+   These must stay complete literal class strings — Tailwind scans source
+   files for class names at build time and cannot see `bg-team-${id}`.
    ========================================================================= */
 
 export type TeamSkin = {
-  /** Solid block: team colour background, readable text on top. */
+  /** Solid fill with readable text on top. */
   chip: string
-  /** Text colour safe on cream paper. */
+  /** Team colour as text, safe on surface and raised. */
   text: string
-  /** Border colour for outlined elements. */
+  /** Border for outlined/selected elements. */
   border: string
+  /** Faint tinted background for panels belonging to a side. */
+  wash: string
 }
 
 const SKINS: Record<TeamId, TeamSkin> = {
   A: {
-    chip: 'bg-blood text-paper',
-    text: 'text-blood',
-    border: 'border-blood',
+    chip: 'bg-team-a text-canvas',
+    text: 'text-team-a',
+    border: 'border-team-a',
+    wash: 'bg-team-a/10',
   },
   B: {
-    chip: 'bg-volt text-ink',
-    text: 'text-ink',
-    border: 'border-volt',
+    chip: 'bg-team-b text-canvas',
+    text: 'text-team-b',
+    border: 'border-team-b',
+    wash: 'bg-team-b/10',
   },
 }
 

@@ -73,11 +73,11 @@ export function reducer(state: GameState, action: Action): GameState {
        Turning raw names into players, then deciding where to go next.
        In 1v1 the teams ARE the players, so we can skip the teams screen. */
     case 'SUBMIT_NAMES': {
-      /* Index-based ids, not name-based: two bros called MIKE must still get
+      /* Index-based ids, not name-based: two players called Mike must still get
          distinct ids, and the index is stable for the whole session. */
       const players: Player[] = action.names.map((name, i) => ({
         id: `p${i}`,
-        name: name.trim().toUpperCase(),
+        name: name.trim(),
       }))
 
       if (players.length === 2) {

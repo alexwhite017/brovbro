@@ -5,8 +5,8 @@ import type { Game } from '../types'
 export const createId = (prefix: string) =>
   `${prefix}_${crypto.randomUUID().slice(0, 8)}`
 
-/** Seed pool. Fully editable in the app, so treat these as placeholders —
- *  swap them for whatever you and the bros actually play. */
+/** Seed pool. Editable in the app and saved to localStorage, so this list
+ *  is only the starting point for a browser that has never run it. */
 export const DEFAULT_GAMES: Game[] = [
   'Overcooked',
   'Super Smash Bros',

@@ -4,10 +4,10 @@ import { skinFor } from '../lib/team'
 import type { ScreenProps } from './screenProps'
 
 /* =========================================================================
-   DRAFT — teams alternate picking from the pool until five games are chosen.
-   Note how little this component knows: it reads two selectors, renders
-   buttons, and dispatches an id. Whose turn it is, when the draft ends and
-   what happens next are all the reducer's business.
+   DRAFT — teams alternate picking until five games are on the card.
+   This component knows almost nothing: it reads two selectors, renders
+   buttons and dispatches an id. Whose turn it is and when the draft ends
+   are the reducer's business.
    ========================================================================= */
 
 export function DraftScreen({ state, dispatch }: ScreenProps) {
@@ -19,38 +19,37 @@ export function DraftScreen({ state, dispatch }: ScreenProps) {
   const skin = skinFor(onTheClock)
 
   return (
-    <div className="space-y-8">
-      {/* Whose pick it is — the loudest thing on the screen, because this is
-          a pass-the-device app and the wrong bro tapping is the main hazard. */}
-      <div className={`border-[3px] border-ink px-4 py-3 ${skin.chip}`}>
-        <p className="label !text-current opacity-75">On the clock</p>
-        <p className="font-display text-2xl uppercase sm:text-3xl">
-          {state.teams[onTheClock].name}
-        </p>
+    <div className="space-y-7">
+      {/* Whose pick it is, stated loudly: this is a pass-the-device app and
+          the wrong person tapping is the main hazard. */}
+      <div className={`panel-raised flex items-center gap-3 px-4 py-3 ${skin.wash}`}>
+        <span className={`h-9 w-1.5 shrink-0 rounded-full ${skin.chip}`} />
+        <div>
+          <p className="label">On the clock</p>
+          <p className="text-xl font-semibold">{state.teams[onTheClock].name}</p>
+        </div>
       </div>
 
-      {/* The five picks, shown as a card of slots. An <ol> because the order
-          is meaningful — that's the semantic difference from <ul>. */}
+      {/* The five picks. An <ol> because the order carries meaning. */}
       <ol className="grid grid-cols-5 gap-2">
         {state.draftOrder.map((owner, i) => {
           const game = state.lineup[i]
           const ownerSkin = skinFor(owner)
+          const current = i === state.draftIndex
           return (
             <li
               key={i}
-              className={`flex min-h-24 flex-col items-center gap-1 border-[3px] px-1 py-2 text-center ${
+              className={`flex min-h-20 flex-col gap-1.5 rounded-lg border p-2 ${
                 game
-                  ? 'border-ink bg-paper-dim'
-                  : 'border-dashed border-ink/35 bg-transparent'
+                  ? 'border-line bg-raised'
+                  : current
+                    ? 'border-fg/40 border-dashed'
+                    : 'border-line/60 border-dashed opacity-60'
               }`}
             >
-              <span
-                className={`font-display px-1.5 text-xs leading-5 ${ownerSkin.chip}`}
-              >
-                {i + 1}
-              </span>
-              <span className="text-[10px] leading-tight break-words">
-                {game?.name ?? ''}
+              <span className={`h-1 w-5 shrink-0 rounded-full ${ownerSkin.chip}`} />
+              <span className="text-[11px] leading-tight break-words">
+                {game?.name ?? <span className="text-muted">—</span>}
               </span>
             </li>
           )
@@ -60,15 +59,15 @@ export function DraftScreen({ state, dispatch }: ScreenProps) {
       <div>
         <p className="label mb-3">
           Pick {state.lineup.length + 1} of {LINEUP_SIZE} · {available.length}{' '}
-          left on the board
+          available
         </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {available.map((game, i) => (
             <button
               key={game.id}
               onClick={() => dispatch({ type: 'DRAFT_GAME', gameId: game.id })}
-              className="btn btn-ghost animate-rise min-h-20 text-base leading-tight"
-              style={{ animationDelay: `${i * 35}ms` }}
+              className="tile animate-rise min-h-16 text-sm"
+              style={{ animationDelay: `${i * 30}ms` }}
             >
               {game.name}
             </button>

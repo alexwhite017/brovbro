@@ -1,41 +1,41 @@
 import { useState } from 'react'
 import { teamNameFor } from '../lib/machine'
+import { skinFor } from '../lib/team'
 import type { ScreenProps } from './screenProps'
 
 /* =========================================================================
    TEAMS (2v2 only) — pick the matchup, or let the app roll it.
 
-   Design decision worth noticing: four players can only be split into two
-   pairs THREE ways. So instead of building a drag-and-drop roster with
-   half-full teams and invalid in-between states, we just list the three
-   possible matchups. Modelling the choice instead of the mechanics deleted
-   an entire class of bugs.
+   Four players split into two pairs exactly three ways, so we list all
+   three instead of building a roster with half-full teams and invalid
+   in-between states. Modelling the choice rather than the mechanics
+   removes a whole class of bugs.
    ========================================================================= */
 
 export function TeamsScreen({ state, dispatch }: ScreenProps) {
   const { players } = state
   const [choice, setChoice] = useState<number | null>(null)
 
-  /* Defensive render. This phase is only reachable with four players, but a
-     stale saved session could in principle land here with fewer — better a
-     readable message than a crash on players[0].id. Note it comes AFTER the
-     hook: hooks must run unconditionally, every render, in the same order. */
+  /* Defensive render. Only reachable with four players, but a stale saved
+     session could arrive with fewer — a readable message beats a crash on
+     players[0].id. After the hook, never before: hooks must run every
+     render, in the same order. */
   if (players.length !== 4) {
-    return <p className="label">Four bros required for 2v2.</p>
+    return <p className="label">Four players required for 2v2.</p>
   }
 
-  /* Anchor on players[0] and pair them with each of the other three; whoever
-     is left over forms the opposing team. Three pairings, no duplicates. */
+  /* Anchor on players[0] and pair them with each of the others; whoever is
+     left forms the opposing team. Anchoring is what avoids listing the same
+     matchup twice with the sides swapped. */
   const pairings = [1, 2, 3].map((partner) => {
     const a = [players[0].id, players[partner].id]
     return { a, b: players.filter((p) => !a.includes(p.id)).map((p) => p.id) }
   })
 
-  /* Randomness lives here in the component, never in the reducer.
-     And because there are exactly three equally-likely outcomes, picking one
-     uniformly IS a fair draw — no shuffle needed. (The general tool for
-     shuffling a list is Fisher-Yates; `sort(() => Math.random() - 0.5)` is
-     the popular one-liner and it is measurably biased.) */
+  /* Randomness lives in the component, never in the reducer. With three
+     equally likely outcomes, picking one uniformly is already a fair draw —
+     no shuffle needed. (The general tool is Fisher-Yates; the popular
+     `sort(() => Math.random() - 0.5)` one-liner is measurably biased.) */
   const randomize = () => setChoice(Math.floor(Math.random() * pairings.length))
 
   const lockIn = () => {
@@ -45,10 +45,10 @@ export function TeamsScreen({ state, dispatch }: ScreenProps) {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="label">Three ways to cut it</p>
-        <button className="btn btn-ghost" onClick={randomize}>
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="label">Three possible matchups</p>
+        <button className="btn btn-ghost !py-2 text-sm" onClick={randomize}>
           Randomize
         </button>
       </div>
@@ -60,25 +60,19 @@ export function TeamsScreen({ state, dispatch }: ScreenProps) {
             <button
               key={i}
               onClick={() => setChoice(i)}
-              /* aria-pressed turns a plain button into a toggle for screen
-                 readers, which is what this actually is. */
+              /* aria-pressed makes this a toggle for screen readers, which
+                 is what it actually is. */
               aria-pressed={selected}
-              className={`animate-rise grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 border-[3px] border-ink px-4 py-5 transition-colors ${
-                selected
-                  ? 'bg-ink text-paper'
-                  : 'bg-paper-dim/40 hover:bg-paper-dim'
+              className={`tile animate-rise grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 ${
+                selected ? 'border-fg bg-fg/5' : ''
               }`}
-              style={{ animationDelay: `${i * 70}ms` }}
+              style={{ animationDelay: `${i * 60}ms` }}
             >
-              <span className="font-display text-xl uppercase sm:text-2xl">
+              <span className={`text-left text-lg ${skinFor('A').text}`}>
                 {teamNameFor(players, pairing.a)}
               </span>
-              <span
-                className={`font-display text-lg uppercase ${selected ? 'text-volt' : 'text-blood'}`}
-              >
-                vs
-              </span>
-              <span className="font-display text-right text-xl uppercase sm:text-2xl">
+              <span className="label !text-[10px]">vs</span>
+              <span className={`text-right text-lg ${skinFor('B').text}`}>
                 {teamNameFor(players, pairing.b)}
               </span>
             </button>
@@ -86,12 +80,8 @@ export function TeamsScreen({ state, dispatch }: ScreenProps) {
         })}
       </div>
 
-      <button
-        className="btn w-full text-xl"
-        disabled={choice === null}
-        onClick={lockIn}
-      >
-        Lock it in
+      <button className="btn w-full" disabled={choice === null} onClick={lockIn}>
+        Confirm teams
       </button>
     </div>
   )

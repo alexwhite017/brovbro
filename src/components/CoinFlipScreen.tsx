@@ -1,20 +1,18 @@
 import { useState } from 'react'
+import { skinFor } from '../lib/team'
 import type { TeamId } from '../types'
 import type { ScreenProps } from './screenProps'
 
 /* =========================================================================
    COIN FLIP — used twice: once for draft order, once for who picks match 1.
-   One component, two uses, driven by the `purpose` prop. Two near-identical
-   files would have drifted apart by step 10.
+   One component, two uses, driven by the `purpose` prop.
    ========================================================================= */
 
 type CoinFlipScreenProps = ScreenProps & {
-  /** What the flip decides. Changes the copy and the action dispatched. */
   purpose: 'draft' | 'firstPick'
 }
 
-/* A tiny three-step script. Same reasoning as the Phase union: three named
-   stages beat two booleans that can both be true at once. */
+/* Three named stages beat two booleans that could both be true at once. */
 type Stage = 'idle' | 'flipping' | 'revealed'
 
 export function CoinFlipScreen({
@@ -25,8 +23,8 @@ export function CoinFlipScreen({
   const [stage, setStage] = useState<Stage>('idle')
   const [result, setResult] = useState<TeamId | null>(null)
 
-  /* The coin is rolled HERE, in the component. The reducer must stay pure,
-     so it only ever receives the outcome. */
+  /* The coin is rolled here, in the component. The reducer stays pure and
+     only ever receives the outcome. */
   const flip = () => {
     setResult(Math.random() < 0.5 ? 'A' : 'B')
     setStage('flipping')
@@ -41,27 +39,28 @@ export function CoinFlipScreen({
     )
   }
 
-  /* The coin's 2160deg spin (6 full turns) ends face-up, so whichever face
-     we put on the front is the face it lands on. Since the result is already
-     decided, the winner simply goes on the front. */
+  /* The 2160deg spin (six full turns) always ends face-up, so whichever
+     face is on the front is the one it lands on. The result is already
+     decided, so the winner simply goes on the front — no logic trying to
+     steer an animation toward an outcome. */
   const front: TeamId = result ?? 'A'
   const back: TeamId = front === 'A' ? 'B' : 'A'
 
   return (
-    <div className="space-y-10">
-      <p className="label">
+    <div className="space-y-8">
+      <p className="text-muted max-w-md text-sm">
         {purpose === 'draft'
-          ? 'Winner of the toss drafts first and gets three of the five picks'
-          : 'Winner of the toss chooses game one'}
+          ? 'The winner drafts first and gets three of the five picks.'
+          : 'The winner chooses which game opens the series.'}
       </p>
 
-      {/* perspective on the PARENT is what makes the child's rotateY read as
-          depth rather than a flat squash. */}
-      <div className="flex justify-center py-4 [perspective:900px]">
+      {/* perspective on the PARENT is what makes rotateY read as depth
+          instead of a flat horizontal squash. */}
+      <div className="flex justify-center py-6 [perspective:900px]">
         <div
-          className={`relative size-32 ${stage !== 'idle' ? 'animate-coin' : ''}`}
-          /* Fires when the CSS animation finishes. Better than setTimeout:
-             it can never drift out of sync with the duration in index.css. */
+          className={`relative size-28 ${stage !== 'idle' ? 'animate-coin' : ''}`}
+          /* Fires when the CSS animation finishes — can't drift out of sync
+             with the duration the way a setTimeout would. */
           onAnimationEnd={() => setStage('revealed')}
         >
           <CoinFace team={front} state={state} />
@@ -69,16 +68,18 @@ export function CoinFlipScreen({
         </div>
       </div>
 
-      {/* The live region is always in the DOM, and only its CONTENTS change.
-          Screen readers watch an existing region for changes; one that
-          appears at the same moment as its text often goes unannounced. */}
-      <div aria-live="polite" className="min-h-28 text-center">
+      {/* The live region is always mounted and only its contents change.
+          Screen readers watch existing regions; one that appears at the
+          same moment as its text often goes unannounced. */}
+      <div aria-live="polite" className="min-h-24 text-center">
         {stage === 'revealed' && result && (
-          <div className="animate-stamp">
-            <p className="label mb-2">The coin says</p>
-            <h3 className="text-4xl sm:text-5xl">{state.teams[result].name}</h3>
-            <p className="label mt-3">
-              {purpose === 'draft' ? 'drafts first' : 'picks game one'}
+          <div className="animate-pop">
+            <p className="label mb-2">Wins the toss</p>
+            <h3 className={`text-3xl sm:text-4xl ${skinFor(result).text}`}>
+              {state.teams[result].name}
+            </h3>
+            <p className="text-muted mt-2 text-sm">
+              {purpose === 'draft' ? 'Drafts first' : 'Picks game one'}
             </p>
           </div>
         )}
@@ -86,16 +87,16 @@ export function CoinFlipScreen({
 
       <div className="flex justify-center">
         {stage === 'revealed' ? (
-          <button className="btn animate-rise text-xl" onClick={advance}>
+          <button className="btn animate-rise" onClick={advance}>
             {purpose === 'draft' ? 'Start the draft' : 'Choose game one'}
           </button>
         ) : (
           <button
-            className="btn text-xl"
+            className="btn"
             onClick={flip}
             disabled={stage === 'flipping'}
           >
-            {stage === 'flipping' ? 'In the air…' : 'Flip the coin'}
+            {stage === 'flipping' ? 'Flipping…' : 'Flip the coin'}
           </button>
         )}
       </div>
@@ -103,7 +104,7 @@ export function CoinFlipScreen({
   )
 }
 
-/* One face of the coin. Extracted because the two faces differ only in a
+/* One face of the coin. Extracted because the two faces differ only by a
    rotation — the moment you'd copy-paste markup, make it a component. */
 function CoinFace({
   team,
@@ -114,17 +115,13 @@ function CoinFace({
   state: ScreenProps['state']
   flipped?: boolean
 }) {
-  /* Team A is always blood red, team B always electric yellow — the same
-     pairing used on every other screen, so colour alone identifies a side. */
-  const skin =
-    team === 'A' ? 'bg-blood text-paper' : 'bg-volt text-ink'
-
   return (
     <div
-      className={`absolute inset-0 grid place-items-center rounded-full border-[3px] border-ink [backface-visibility:hidden] ${skin} ${flipped ? '[transform:rotateY(180deg)]' : ''}`}
+      /* An inset ring and a dropped shadow give the flat disc enough edge
+         to read as an object rather than a coloured circle. */
+      className={`ring-canvas/25 absolute inset-0 grid place-items-center rounded-full px-2 text-center shadow-xl shadow-black/50 ring-4 ring-inset ${skinFor(team).chip} ${flipped ? '[transform:rotateY(180deg)]' : ''} [backface-visibility:hidden]`}
     >
-      <span className="font-display text-4xl">{team}</span>
-      <span className="label !text-[9px] mt-1 max-w-24 truncate !text-current opacity-80">
+      <span className="w-full truncate text-base font-semibold">
         {state.teams[team].name}
       </span>
     </div>

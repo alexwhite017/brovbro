@@ -2,30 +2,24 @@ import { useState, type FormEvent } from 'react'
 import type { ScreenProps } from './screenProps'
 
 /* =========================================================================
-   SETUP — choose 1v1 or 2v2, then type the names.
+   SETUP — choose 1v1 or 2v2, then enter the names.
    ========================================================================= */
 
-/** Purely decorative placeholder names, cycled through the inputs. */
-const PLACEHOLDERS = ['CHAD', 'BRODY', 'TANK', 'DUTCH']
-
 export function SetupScreen({ state, dispatch }: ScreenProps) {
-  /* Local state, not reducer state: half-typed names are UI scratch work,
-     not part of the game. Only the submitted result is worth dispatching. */
+  /* Local state, not reducer state: half-typed names are UI scratch work.
+     Only the submitted result is worth dispatching. */
   const [names, setNames] = useState<string[]>([])
 
-  /* How many inputs to show is NOT stored anywhere — it's derived from the
-     chosen mode. One source of truth (state.mode) instead of two that can
-     disagree. `names` may be shorter than this, so every read is padded. */
+  /* How many inputs to show is derived from the chosen mode rather than
+     stored, so the two can never disagree. `names` may be shorter, so every
+     read is padded. */
   const fieldCount = state.mode ?? 0
   const fields = Array.from({ length: fieldCount }, (_, i) => names[i] ?? '')
-
-  /* Also derived, never stored. Recomputed on every keystroke, which is
-     cheap and can't go stale the way a useState flag would. */
   const ready = fieldCount > 0 && fields.every((n) => n.trim().length > 0)
 
-  /* Replace one slot with a BRAND NEW array. Mutating (names[i] = value)
-     would keep the same object reference, React would see "nothing changed",
-     and your typing would never appear on screen. */
+  /* Replace one slot with a brand new array. Mutating (names[i] = value)
+     keeps the same object reference, so React sees no change and your
+     typing never appears. */
   const updateName = (index: number, value: string) =>
     setNames((prev) =>
       Array.from({ length: fieldCount }, (_, i) =>
@@ -34,28 +28,38 @@ export function SetupScreen({ state, dispatch }: ScreenProps) {
     )
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    /* Without this the browser does a full page navigation on submit and
-       the whole app reloads from scratch. */
-    event.preventDefault()
+    event.preventDefault() /* otherwise the browser reloads the page */
     if (!ready) return
     dispatch({ type: 'SUBMIT_NAMES', names: fields })
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-9">
       <section>
-        <p className="label mb-3">How many bros</p>
-        <div className="flex gap-3">
+        <p className="label mb-3">Format</p>
+        <div className="grid grid-cols-2 gap-3">
           {([2, 4] as const).map((n) => {
             const active = state.mode === n
             return (
               <button
                 key={n}
                 onClick={() => dispatch({ type: 'SET_MODE', mode: n })}
-                className={`btn flex-1 text-2xl ${active ? '!bg-blood !border-blood' : 'btn-ghost'}`}
                 aria-pressed={active}
+                /* Selected state is a border + tint, not a fill: it has to
+                   sit next to an unselected sibling and still read as "on"
+                   without competing with the primary button below. */
+                className={`tile text-center ${
+                  active
+                    ? 'border-team-a bg-team-a/10 text-fg'
+                    : 'text-muted hover:text-fg'
+                }`}
               >
-                {n === 2 ? '1 v 1' : '2 v 2'}
+                <span className="block text-xl font-semibold">
+                  {n === 2 ? '1 v 1' : '2 v 2'}
+                </span>
+                <span className="label mt-1 block">
+                  {n === 2 ? 'Head to head' : 'Teams of two'}
+                </span>
               </button>
             )
           })}
@@ -63,27 +67,24 @@ export function SetupScreen({ state, dispatch }: ScreenProps) {
       </section>
 
       {state.mode !== null && (
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid gap-6 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="space-y-7">
+          <div className="grid gap-4 sm:grid-cols-2">
             {fields.map((name, i) => (
-              /* Wrapping the input in its own <label> links the two without
-                 needing matching id/htmlFor attributes — fewer strings to
-                 keep in sync, and clicking the text focuses the field.
-                 key={i} is safe here: this list is a fixed length and is
-                 never sorted or filtered, so the index IS a stable identity. */
+              /* Wrapping the input in its own <label> links the two with no
+                 id/htmlFor pair to keep in sync, and makes the text a click
+                 target. key={i} is safe: fixed length, never reordered. */
               <label
                 key={i}
                 className="animate-rise block"
-                style={{ animationDelay: `${i * 60}ms` }}
+                style={{ animationDelay: `${i * 55}ms` }}
               >
                 <span className="label mb-2 block">Player {i + 1}</span>
                 <input
                   className="field"
                   value={name}
                   onChange={(e) => updateName(i, e.target.value)}
-                  placeholder={PLACEHOLDERS[i % PLACEHOLDERS.length]}
-                  /* 14 chars is roughly what fits on the champion screen at
-                     text-8xl. Capping input beats clipping output. */
+                  /* 14 characters is what fits on the champion screen at its
+                     largest size. Capping input beats clipping output. */
                   maxLength={14}
                   autoFocus={i === 0}
                   autoComplete="off"
@@ -97,14 +98,13 @@ export function SetupScreen({ state, dispatch }: ScreenProps) {
             <p className="label">
               {ready
                 ? state.mode === 2
-                  ? 'One on one. No alibis.'
-                  : 'Teams get drawn next.'
-                : 'Every name required'}
+                  ? 'Coin toss next'
+                  : 'Teams next'
+                : 'Enter every name'}
             </p>
-            {/* type="submit" means click AND Enter both run handleSubmit —
-                one code path instead of two that drift apart. */}
-            <button type="submit" className="btn text-xl" disabled={!ready}>
-              {state.mode === 2 ? 'To the coin toss' : 'Pick the teams'}
+            {/* type="submit" means click and Enter share one code path. */}
+            <button type="submit" className="btn" disabled={!ready}>
+              Continue
             </button>
           </div>
         </form>
