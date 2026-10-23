@@ -8,16 +8,16 @@ export const createId = (prefix: string) =>
 /** Seed pool. Fully editable in the app, so treat these as placeholders —
  *  swap them for whatever you and the bros actually play. */
 export const DEFAULT_GAMES: Game[] = [
-  'Mario Kart',
+  'Overcooked',
   'Super Smash Bros',
   'Rocket League',
-  'FIFA',
-  'NBA 2K',
-  'Call of Duty',
-  'Tekken',
-  'Golf With Your Friends',
-  'Mario Party',
-  'Darts',
+  'Black Ops 2',
+  'Halo 3',
+  'Stick Fight',
+  'Volleyball',
+  'Switch Sports',
+  'For Honor',
+  'Geoguessr',
 ].map((name) => ({ id: createId('g'), name }))
 
 /** Bo5: first side to this many wins is crowned. */
